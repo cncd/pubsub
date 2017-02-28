@@ -5,14 +5,6 @@ import (
 	"sync"
 )
 
-type topic struct {
-	sync.Mutex
-
-	name string
-	done chan bool
-	subs map[*subscriber]struct{}
-}
-
 type subscriber struct {
 	receiver Receiver
 }
@@ -20,50 +12,41 @@ type subscriber struct {
 type publisher struct {
 	sync.Mutex
 
-	paths map[string]*topic
+	topics map[string]*topic
 }
 
 // New creates an in-memory publisher.
 func New() Publisher {
 	return &publisher{
-		paths: make(map[string]*topic),
+		topics: make(map[string]*topic),
 	}
 }
 
-func (p *publisher) Create(c context.Context, path string) error {
+func (p *publisher) Create(c context.Context, dest string) error {
 	p.Lock()
-	t, ok := p.paths[path]
+	t, ok := p.topics[dest]
 	if !ok {
-		t = &topic{
-			name: path,
-			done: make(chan bool),
-			subs: make(map[*subscriber]struct{}),
-		}
-		p.paths[path] = t
+		t = newTopic(dest)
+		p.topics[dest] = t
 	}
 	p.Unlock()
 	return nil
 }
 
-func (p *publisher) Publish(c context.Context, path string, message Message) error {
+func (p *publisher) Publish(c context.Context, dest string, message Message) error {
 	p.Lock()
-	t, ok := p.paths[path]
+	t, ok := p.topics[dest]
 	p.Unlock()
 	if !ok {
 		return ErrNotFound
 	}
-	t.Lock()
-	for sub := range t.subs {
-		// todo this needs to be improved
-		go sub.receiver(message)
-	}
-	t.Unlock()
+	t.publish(message)
 	return nil
 }
 
-func (p *publisher) Subscribe(c context.Context, path string, receiver Receiver) error {
+func (p *publisher) Subscribe(c context.Context, dest string, receiver Receiver) error {
 	p.Lock()
-	t, ok := p.paths[path]
+	t, ok := p.topics[dest]
 	p.Unlock()
 	if !ok {
 		return ErrNotFound
@@ -71,26 +54,22 @@ func (p *publisher) Subscribe(c context.Context, path string, receiver Receiver)
 	s := &subscriber{
 		receiver: receiver,
 	}
-	t.Lock()
-	t.subs[s] = struct{}{}
-	t.Unlock()
+	t.subscribe(s)
 	select {
 	case <-c.Done():
 	case <-t.done:
 	}
-	t.Lock()
-	delete(t.subs, s)
-	t.Unlock()
+	t.unsubscribe(s)
 	return nil
 }
 
-func (p *publisher) Remove(c context.Context, path string) error {
+func (p *publisher) Remove(c context.Context, dest string) error {
 	p.Lock()
-	t, ok := p.paths[path]
+	t, ok := p.topics[dest]
 	if ok {
-		delete(p.paths, path)
+		delete(p.topics, dest)
+		t.close()
 	}
-	close(t.done)
 	p.Unlock()
 	return nil
 }
