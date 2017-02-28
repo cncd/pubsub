@@ -1,0 +1,6 @@
+Go package pubsub implements a publish-subscriber messaging system with support for pluggable cloud native backends.
+
+Documentation:
+
+    http://godoc.org/github.com/cncd/pubsub
+    http://godoc.org/github.com/cncd/pubsub/gcp
