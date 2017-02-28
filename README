@@ -1,4 +1,4 @@
-Go package pubsub implements a publish-subscriber messaging system with support for pluggable cloud native backends.
+Go package provides a common interface for publish-subscriber messaging with pluggable backends.
 
 Documentation:
 
