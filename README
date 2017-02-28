@@ -1,4 +1,4 @@
-Go package provides a common interface for publish-subscriber messaging with pluggable backends.
+Go package provides a common interface for publish-subscriber messaging.
 
 Documentation:
 
