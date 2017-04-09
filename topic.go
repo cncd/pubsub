@@ -6,14 +6,14 @@ type topic struct {
 	sync.Mutex
 
 	name string
-	done chan bool
+	done chan struct{}
 	subs map[*subscriber]struct{}
 }
 
 func newTopic(dest string) *topic {
 	return &topic{
 		name: dest,
-		done: make(chan bool),
+		done: make(chan struct{}),
 		subs: make(map[*subscriber]struct{}),
 	}
 }
