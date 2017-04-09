@@ -52,7 +52,6 @@ func TestPublishNotFound(t *testing.T) {
 			Data: []byte("test"),
 		}
 	)
-
 	broker := New()
 	err := broker.Publish(context.Background(), testTopic, testMessage)
 	if err != ErrNotFound {
